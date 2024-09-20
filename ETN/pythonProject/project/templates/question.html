@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question</title>
+</head>
+<body>
+    <h1>{{ question['question_text'] }}</h1>
+    <form method="POST">
+        {% if question['image'] %}
+            <img src="{{ url_for('static', filename=question['image']) }}" alt="Image">
+        {% endif %}
+        <ul>
+            {% for option in options %}
+                <li>
+                    <label>
+                        <input type="radio" name="answer" value="{{ option['option_label'] }}">
+                        {{ option['option_text'] }}
+                    </label>
+                </li>
+            {% endfor %}
+        </ul>
+        <button type="submit">Submit</button>
+    </form>
+    <a href="{{ url_for('quiz') }}">Back to quiz list</a>
+</body>
+</html>
