@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            width: 80%;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .question-box {
+            margin-bottom: 20px;
+            padding: 20px;
+            background-color: #003366; /* Azul escuro */
+            color: #fff;
+            border: 1px solid #003366;
+            border-radius: 8px;
+            text-align: left;
+            font-size: 18px;
+        }
+
+        .question-box img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .option-box {
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #e0e0e0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            text-align: left;
+            cursor: pointer;
+            display: block;
+        }
+
+        .option-box:hover {
+            background-color: #d0d0d0;
+        }
+
+        .option-box input[type="radio"] {
+            display: none;
+        }
+
+        .option-box .option-label {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background-color: #007bff;
+            color: #fff;
+            text-align: center;
+            line-height: 30px;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        .option-box .option-text {
+            display: inline;
+            color: #000;
+        }
+
+        .option-box input[type="radio"]:checked + .option-label {
+            background-color: #0056b3;
+        }
+
+        .button-container {
+            margin-top: 20px;
+        }
+
+        .button-container button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .button-container button:disabled {
+            background-color: #d6d6d6;
+            cursor: not-allowed;
+        }
+
+        .alert {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Quiz</h1>
+
+        <form method="POST" action="{{ url_for('quiz') }}" onsubmit="return validateForm();">
+            <div class="question-box">
+                <p><strong>{{ current + 1 }})</strong> {{ question['question_text'] }}</p>
+
+                {% if question['image'] %}
+                    <img src="{{ url_for('static', filename='images/' ~ question['image']) }}" alt="Imagem da questão">
+                {% endif %}
+
+                <input type="hidden" name="question_id" value="{{ question['id'] }}">
+                {% for option in options %}
+                    <label class="option-box">
+                        <input type="radio" name="answer" value="{{ option['option_label'] }}"
+                            {% if session['answers'][question['id']|string] == option['option_label'] %} checked {% endif %}>
+                        <span class="option-label">{{ option['option_label'] }}</span>
+                        <span class="option-text">{{ option['option_text'] }}</span>
+                    </label>
+                {% endfor %}
+            </div>
+
+            <div class="button-container">
+                <button type="submit" name="previous" {% if current == 0 %} disabled {% endif %}>Anterior</button>
+                <button type="submit" name="next" {% if current == total - 1 %} disabled {% endif %}>Próximo</button>
+                <button type="submit" name="finish" id="finish-button" disabled>Finalizar</button>
+            </div>
+        </form>
+
+        <script>
+            function validateForm() {
+                if (!document.querySelector('input[name="answer"]:checked')) {
+                    alert('Por favor, selecione uma resposta antes de continuar.');
+                    return false;
+                }
+                return true;
+            }
+
+            function updateFinishButton() {
+                const currentQuestion = {{ current }};
+                const totalQuestions = {{ total }};
+                const finishButton = document.getElementById('finish-button');
+
+                // Verifica se todas as questões foram respondidas
+                const allAnswered = allQuestionsAnswered();
+
+                if (currentQuestion === totalQuestions - 1) {
+                    // Ativa o botão "Finalizar" se todas as perguntas foram respondidas na última questão
+                    finishButton.disabled = !allAnswered;
+                } else {
+                    // Durante a revisão, ativa o botão "Finalizar" se todas as perguntas foram respondidas
+                    finishButton.disabled = !allAnswered;
+                }
+            }
+
+            function allQuestionsAnswered() {
+                const answers = {{ session['answers']|tojson }};
+                return Object.keys(answers).length === {{ total }};
+            }
+
+            // Atualizar o botão "Finalizar" sempre que uma opção for selecionada
+            document.querySelectorAll('input[name="answer"]').forEach(input => {
+                input.addEventListener('change', updateFinishButton);
+            });
+
+            // Atualizar o botão "Finalizar" sempre que mudar de questão
+            document.querySelectorAll('button[name="next"], button[name="previous"]').forEach(button => {
+                button.addEventListener('click', updateFinishButton);
+            });
+
+            // Verificar se o botão "Finalizar" deve ser habilitado ao carregar a página
+            document.addEventListener('DOMContentLoaded', function() {
+                updateFinishButton();
+            });
+        </script>
+    </div>
+</body>
+</html>
